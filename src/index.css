@@ -3,3 +3,36 @@ body {
   padding: 0;
   font-family: sans-serif;
 }
+
+.post-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.post-list-item {
+  display: flex;
+  /*justify-content: center;*/
+  align-items: center;
+  margin: 30px;
+  padding: 5px;
+}
+
+.post-list-item-title {
+  text-align: center;
+  margin-left: 20px;
+}
+
+.post-list-item-author {
+  font-weight: bold;
+  font-size: small;
+}
+
+.post-list-item-posted-by {
+  text-align: right;
+}
+
+.posted-by {
+  font-style: italic;
+  font-size: small;
+
+}
