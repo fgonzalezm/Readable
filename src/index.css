@@ -13,13 +13,14 @@ body {
   display: flex;
   /*justify-content: center;*/
   align-items: center;
-  margin: 30px;
+  margin: 5px;
   padding: 5px;
 }
 
 .post-list-item-title {
-  text-align: center;
-  margin-left: 20px;
+  text-align: left;
+  margin-left: 10px;
+  min-width: 250px;
 }
 
 .post-list-item-author {
@@ -34,5 +35,13 @@ body {
 .posted-by {
   font-style: italic;
   font-size: small;
+}
 
+.post-list-item-date {
+  text-align: right;
+}
+
+.posted-on {
+  font-style: italic;
+  font-size: small;
 }
