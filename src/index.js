@@ -23,12 +23,18 @@ const store = createStore(
   )
 )
 
-ReactDOM.render(
-  <Provider store={store} >
-    <BrowserRouter>
-      <App />
-    </BrowserRouter>
-  </Provider>, document.getElementById('root')
-)
+const baseRender = () => {
+  // const dispatch = store.dispatch
+  // const state = store.getState()
+  return (
+    <Provider store={store} >
+      <BrowserRouter>
+        <App />
+      </BrowserRouter>
+    </Provider>
+  )
+}
+
+ReactDOM.render(baseRender(), document.getElementById('root'))
 
 registerServiceWorker();

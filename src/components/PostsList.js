@@ -3,37 +3,41 @@ import {connect} from 'react-redux'
 import {Link} from 'react-router-dom'
 
 import {
-  getPosts,
-  getCategories,
   sortPosts,
-  saveVote
+  openModal,
+  closeModal
 } from '../actions/index'
 
-import {voteOptions, sortOptions} from '../utils/config'
+import Vote from './Vote'
+import EditItem from './EditItem'
+
+import {voteOptions, sortOptions, modalOptions} from '../utils/config'
+
+import Modal from 'react-modal'
 
 class PostsList extends React.Component {
-
-  componentDidMount () {
-    if (this.props.posts.length === 0) {
-      this.props.dispatch(getCategories())
-      this.props.dispatch(getPosts())
-    }
-  }
 
   filterPostsByCategory = (category) => {
     const {posts} = this.props
     return posts.filter(post => post.category === category)
   }
 
-  vote = (id, value) => {
-    this.props.dispatch(saveVote(voteOptions.type.post, id, value))
+  getCommentsCount = (postId) => {
+    const {comments} = this.props
+    if (!comments || !comments.received) {
+      return 0
+    }
+
+    const postComments = this.props.comments.byPostId[postId]
+    return postComments ? postComments.length : 0
   }
 
   render () {
-    const {posts, categories, dispatch, match} = this.props
+    const {posts, categories, dispatch, match, sortBy, modal} = this.props
     let filteredPosts
+    let category = null
     if (match.path === '/:category') {
-      const {category} = match.params
+      category = match.params.category
       filteredPosts = this.filterPostsByCategory(category)
     } else {
       filteredPosts = posts
@@ -48,7 +52,9 @@ class PostsList extends React.Component {
         </div>
         <div className='post-list-sort-by'>
           <span>Sort by: </span>
-          <select onChange={event => dispatch(sortPosts(event.target.value))}>
+          <select
+            value={sortBy}
+            onChange={event => dispatch(sortPosts(event.target.value))} >
             {Object.keys(sortOptions.by).map(sortBy => {
               return (
                 <option key={sortBy} value={sortBy}>{sortBy}</option>
@@ -59,30 +65,21 @@ class PostsList extends React.Component {
         <ul className='post-list'>
           {filteredPosts.map((post) => (
             <li key={post.id} className='post-list-item'>
-              <span>
-                <button
-                  onClick={() => this.vote(post.id, voteOptions.value.up)}
-                >
-                  ^
-                </button>
-                <div className='voteScore'>{post.voteScore}</div>
-                <button
-                  onClick={() => this.vote(post.id, voteOptions.value.down)}
-                >
-                  V
-                </button>
-              </span>
+              <Vote type={voteOptions.type.post} item={post} />
               <span className='post-list-item-title'>
                 <Link to={`${post.category}/${post.id}`}>
                   <div>
                   {post.title}
                   </div>
                 </Link>
-                <div className="post-list-item-posted-by">
-                  <text className='posted-by'>Posted by: </text><text className='post-list-item-author'>{post.author}</text>
-                </div>
-                <div className='post-list-item-date'>
-                  <text className='posted-on'>{(new Date(post.timestamp)).toDateString()}</text>
+                <div>
+                  <div>Comments: {this.getCommentsCount(post.id)} </div>
+                  <div className="post-list-item-posted-by">
+                    <text className='posted-by'>Posted by: </text><text className='post-list-item-author'>{post.author}</text>
+                  </div>
+                  <div className='post-list-item-date'>
+                    <text className='posted-on'>{(new Date(post.timestamp)).toLocaleString()}</text>
+                  </div>
                 </div>
               </span>
               <div>
@@ -92,15 +89,28 @@ class PostsList extends React.Component {
             </li>
           ))}
         </ul>
+        <div>
+          <button onClick={() => dispatch(openModal(modalOptions.type.newPost, category))} >Add post</button>
+        </div>
+        <Modal
+          isOpen={modal.open}
+          onRequestClose={() => dispatch(closeModal())}
+        >
+          <EditItem/>
+        </Modal>
       </div>
     )
   }
 }
 
-function mapStateToProps ({posts, categories}) {
+function mapStateToProps ({posts, categories, comments, modal}) {
+
   return {
     posts: posts.allIds ? posts.allIds.map(id => posts.byId[id]) : [],
-    categories: Object.keys(categories)
+    categories: Object.keys(categories),
+    comments: comments,
+    sortBy: posts.sortBy,
+    modal
   }
 }
 

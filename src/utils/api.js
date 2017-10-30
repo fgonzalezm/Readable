@@ -24,6 +24,16 @@ export function fetchCategories () {
   return readableFetch(url, {headers})
 }
 
+export function fetchComments (posts) {
+  const baseUrl = SERVER_URL + '/posts/'
+  const promises = posts.map(post => {
+    const url = baseUrl + post.id + '/comments'
+    return readableFetch(url, {headers})
+  })
+
+  return Promise.all(promises)
+}
+
 export function vote (type, id, value) {
   let url = SERVER_URL
   if (type === voteOptions.type.post) {
@@ -38,6 +48,13 @@ export function vote (type, id, value) {
   return readableFetch(url, {headers: headersJson, body, method})
 }
 
+export function saveNewItem (item) {
+  let url = SERVER_URL + '/posts'
+  const method = 'post'
+
+  return readableFetch(url, {headers: headersJson, body: JSON.stringify(item), method})
+}
+
 function readableFetch (url, params) {
   return fetch(url, params)
     .then((response) => {
@@ -47,5 +64,7 @@ function readableFetch (url, params) {
       console.log('Response failed. Status: ', response.status, ' Text: ', response.statusText)
       throw new Error('Network error')
     })
-    .then(json => json)
+    .then(json => {
+      return json
+    })
 }

@@ -2,7 +2,12 @@ import {
   RECEIVE_POSTS,
   GET_CATEGORIES,
   SORT_POSTS,
-  VOTE
+  VOTE,
+  RECEIVE_COMMENTS,
+  LOADING,
+  OPEN_MODAL,
+  CLOSE_MODAL,
+  RECEIVE_NEW_POST
 } from '../actions/index'
 
 import {voteOptions, sortOptions} from '../utils/config'
@@ -19,11 +24,11 @@ function posts (state = {sortBy: sortOptions.by.score}, action) {
         return posts
       }, {byId: {}, allIds: []})
 
-      posts.allIds = sortPosts(state.sortBy, posts)
+      posts.allIds = sort(state.sortBy, posts.byId, posts.allIds)
       posts.sortBy = sortOptions.by.score
       return posts
     case SORT_POSTS:
-      const allIds = sortPosts(action.sortBy, state)
+      const allIds = sort(action.sortBy, state.byId, state.allIds)
       return {
         ...state,
         sortBy: action.sortBy,
@@ -49,24 +54,107 @@ function posts (state = {sortBy: sortOptions.by.score}, action) {
             }
           },
         }
+        if (newState.sortBy === sortOptions.by.score) {
+          newState.allIds = sort(newState.sortBy, newState.byId, newState.allIds)
+        }
       }
-      newState.allIds = sortPosts(state.sortBy, newState)
       return newState
+    case RECEIVE_NEW_POST: {
+      const newState2 = {
+        ...state,
+        byId: {
+          ...state.byId,
+          [action.item.id]: action.item
+        },
+      }
+      newState2.allIds =  sort(state.sortBy, newState2.byId, state.allIds, action.item.id)
+      return newState2
+    }
     default:
       return state
   }
 }
 
-function sortPosts (sortBy, posts) {
-  const allIds = Array.from(posts.allIds)
-  allIds.sort((a,b) => {
-    const aPost = posts.byId[a]
-    const bPost = posts.byId[b]
+function comments (state = {received: false, sortBy: sortOptions.by.score}, action) {
+  switch (action.type) {
+    case RECEIVE_COMMENTS:
+      const comments = action.comments.reduce((accumulator, postComments) => {
+        postComments.reduce((acc, comment) => {
+          acc.byId[comment.id] = comment
+          return acc
+        }, accumulator)
+        if (postComments.length > 0) {
+          const parentId = postComments[0].parentId
+          accumulator.byPostId[parentId] = postComments.map(comment => {
+            return comment.id
+          })
+        }
+        return accumulator
+      }, {byId: {}, byPostId: {}})
+
+      Object.keys(comments.byPostId).forEach(parentId => {
+        sort(state.sortBy, comments.byId, comments.byPostId[parentId])
+      })
+      comments.received = true
+      comments.sortBy = sortOptions.by.score
+      return comments
+    case VOTE:
+      return handleVote(state, action, voteOptions.type.comment)
+    default:
+      return state
+  }
+}
+
+function handleVote (state, action, type) {
+
+  if (action.voteType !== type) {
+    return state
+  }
+  const {id, voteType, value} = action
+
+  let score = state.byId[id].voteScore
+  if (value === voteOptions.value.up) {
+    score++
+  } else {
+    score--
+  }
+
+  const newState = {
+    ...state,
+    byId: {
+      ...state.byId,
+      [id]: {
+        ...state.byId[id],
+        voteScore: score
+      }
+    },
+  }
+
+  if (newState.sortBy === sortOptions.by.score) {
+    if (voteType === voteOptions.type.post) {
+      newState.allIds = sort(newState.sortBy, newState.byId, newState.allIds)
+    } else {
+      const {parentId} = newState.byId[id]
+      newState.byPostId[parentId] = sort(newState.sortBy, newState.byId, newState.byPostId[parentId])
+    }
+  }
+
+  return newState
+}
+
+function sort (sortBy, object, idArray, newItem) {
+  const allIds = Array.from(idArray)
+  if (newItem) {
+    allIds.push(newItem)
+  }
+  allIds.sort((idA,idB) => {
+    const a = object[idA]
+    const b = object[idB]
     switch (sortBy) {
       case sortOptions.by.score:
-        return bPost.voteScore - aPost.voteScore
+        return b.voteScore - a.voteScore
       case sortOptions.by.date:
-        return bPost.timestamp - aPost.timestamp
+        return b.timestamp - a.timestamp
       default:
         return allIds
     }
@@ -87,7 +175,38 @@ function categories (state = {}, action) {
 
 }
 
+function loading (state = {isLoading: true}, action) {
+  switch (action.type) {
+    case LOADING:
+      return {isLoading: action.isLoading}
+    default:
+      return state
+  }
+}
+
+function modal (state = {open: false}, action) {
+  switch (action.type) {
+    case OPEN_MODAL:
+      const {id, modalType, category} = action
+      return {
+        open: true,
+        id,
+        modalType,
+        category
+      }
+    case CLOSE_MODAL:
+      return {open: false}
+    case RECEIVE_NEW_POST:
+      return {open: false}
+    default:
+      return state
+  }
+}
+
 export default combineReducers({
   posts,
-  categories
+  categories,
+  comments,
+  loading,
+  modal
 })
