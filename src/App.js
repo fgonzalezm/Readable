@@ -1,5 +1,4 @@
 import React, { Component } from 'react';
-import logo from './logo.svg';
 import {connect} from 'react-redux'
 
 import {Route, Switch, Link, withRouter} from 'react-router-dom'
@@ -8,8 +7,6 @@ import Loading from 'react-loading'
 import {
   getPosts,
   getCategories,
-  sortPosts,
-  saveVote,
   getComments,
   loading
 } from './actions/index'
@@ -41,13 +38,17 @@ class App extends Component {
     const {loading} = this.props
     return (
       <div className="App">
-        <Link to='/' ><h1 className='title'>Postmaster</h1></Link>
+        <div className="title">
+          <Link to='/' ><h1 className='title-h1' >Postmaster</h1></Link>
+        </div>
         {loading.isLoading ? <Loading delay={200} type='spin' />
-        : <Switch>
-          <Route path='/:category/:postId' component={Post} />
-          <Route exact path='/:category' component={PostsList} />
-          <Route exact path='/' component={PostsList} />
-        </Switch> }
+        : <div className='app-body' >
+            <Switch >
+              <Route path='/:category/:postId' component={Post} />
+              <Route exact path='/:category' component={PostsList} />
+              <Route exact path='/' component={PostsList} />
+            </Switch>
+          </div>}
       </div>
     );
   }

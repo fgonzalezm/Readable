@@ -1,8 +1,12 @@
 import React from 'react'
 import {connect} from 'react-redux'
+import ArrowUpIcon from 'react-icons/lib/io/arrow-up-b'
+import ArrowDownIcon from 'react-icons/lib/io/arrow-down-b'
 
 import {voteOptions} from '../utils/config'
 import {saveVote} from '../actions/index'
+
+const defaultIconSize = '1.5rem'
 
 class Vote extends React.Component {
   voteUp = () => {
@@ -19,19 +23,20 @@ class Vote extends React.Component {
   }
 
   render () {
-    const {item} = this.props
+    let {item, iconSize} = this.props
+    iconSize = iconSize || defaultIconSize
     return (
-      <div>
+      <div className="vote">
         <button
           onClick={this.voteUp}
         >
-          ^
+          <ArrowUpIcon size={iconSize} />
         </button>
-        <div className='voteScore'>{item.voteScore}</div>
+        <div className='vote-score' style={{fontSize: iconSize}}>{item.voteScore}</div>
         <button
           onClick={this.voteDown}
         >
-          V
+          <ArrowDownIcon size={iconSize} />
         </button>
       </div>
     )

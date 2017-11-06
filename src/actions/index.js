@@ -1,4 +1,18 @@
-import {fetchPosts, fetchCategories, vote, fetchComments, saveNewItem} from '../utils/api'
+import {
+  fetchPosts,
+  fetchCategories,
+  vote,
+  fetchComments,
+  saveNewItem,
+  saveEdit,
+  saveDeleteItem
+} from '../utils/api'
+import {
+  validationOptions,
+  modalOptions,
+  itemTypes,
+  errorTypes
+} from '../utils/config'
 
 const uuidv4 = require('uuid/v4')
 
@@ -16,6 +30,11 @@ export const CLOSE_MODAL = 'CLOSE_MODAL'
 export const NEW_ITEM = 'NEW_ITEM'
 export const ITEM_NOT_VALID = 'ITEM_NOT_VALID'
 export const RECEIVE_NEW_POST = 'RECEIVE_NEW_POST'
+export const RECEIVE_EDIT_POST = 'RECEIVE_EDIT_POST'
+export const RECEIVE_NEW_COMMENT = 'RECEIVE_NEW_COMMENT'
+export const RECEIVE_EDIT_COMMENT = 'RECEIVE_EDIT_COMMENT'
+export const RECEIVE_DELETE_POST = 'RECEIVE_DELETE_POST'
+export const RECEIVE_DELETE_COMMENT = 'RECEIVE_DELETE_COMMENT'
 
 export const getPosts = () => dispatch => (
   fetchPosts().then(posts => dispatch(receivePosts(posts)))
@@ -67,30 +86,32 @@ export const loading = (isLoading) => ({
   isLoading
 })
 
-export const openModal = (type, category, id) => ({
+export const openModal = (type, category, id, parentId) => ({
   type: OPEN_MODAL,
   modalType: type,
   id,
-  category
+  category,
+  parentId
 })
 
 export  const closeModal = () => ({
   type: CLOSE_MODAL
 })
 
-const errorTypes = {
-  isEmpty: 'isEmpty'
-}
+export const newItem = (item, modalType, id, parentId) => dispatch => {
+  const {author, title, body} = item
 
-export const newItem = (item) => dispatch => {
-  const {author, title, body, category} = item
   const validation = {}
   let isValid = true
-  if (author === '') {
+  if (validationOptions.fields.title[modalType] && !title) {
+    isValid = false
+    validation.title = errorTypes.isEmpty
+  }
+  if (validationOptions.fields.author[modalType] && !author) {
     isValid = false
     validation.author = errorTypes.isEmpty
   }
-  if (body === '') {
+  if (!body) {
     isValid = false
     validation.body = errorTypes.isEmpty
   }
@@ -98,9 +119,28 @@ export const newItem = (item) => dispatch => {
   if (!isValid) {
     dispatch(itemNotValid(validation))
   } else {
-    item.id = uuidv4()
-    item.timestamp = Date.now().valueOf()
-    saveNewItem(item).then((response) => dispatch(receiveNewPost(response)))
+    const {type} = modalOptions
+    switch (modalType) {
+      case type.newPost:
+        item.id = uuidv4()
+        item.timestamp = Date.now().valueOf()
+        saveNewItem(item).then((response) => dispatch(receiveNewPost(response)))
+        break
+      case type.editPost:
+        saveEdit(item, id).then(response => dispatch(receiveEditPost(response)))
+        break
+      case type.newComment:
+        item.id = uuidv4()
+        item.timestamp = Date.now().valueOf()
+        item.parentId = parentId
+        saveNewItem(item).then(response => dispatch(receiveNewComment(response)))
+        break
+      case type.editComment:
+        saveEdit(item, id).then(response => dispatch(receiveEditComment(response)))
+        break
+      default:
+        break
+    }
   }
 }
 
@@ -112,4 +152,30 @@ export const itemNotValid = (validation) => ({
 export const receiveNewPost = (item) => ({
   type: RECEIVE_NEW_POST,
   item
+})
+
+export const receiveEditPost = (item) => ({
+  type: RECEIVE_EDIT_POST,
+  item
+})
+
+export const receiveNewComment = (item) => ({
+  type: RECEIVE_NEW_COMMENT,
+  item
+})
+
+export const receiveEditComment = (item) => ({
+  type: RECEIVE_EDIT_COMMENT,
+  item
+})
+
+export const deleteItem = (id, itemType) => dispatch => {
+  saveDeleteItem(id, itemType).then(response => {
+    dispatch(receiveDeleteItem(response, itemType))
+  })
+}
+
+const receiveDeleteItem = (response, itemType) => ({
+  type: itemType === itemTypes.post ? RECEIVE_DELETE_POST : RECEIVE_DELETE_COMMENT,
+  response
 })

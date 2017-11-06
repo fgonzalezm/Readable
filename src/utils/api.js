@@ -1,4 +1,4 @@
-import {voteOptions} from './config'
+import {voteOptions, itemTypes} from './config'
 
 const AUTH_ID = 'ECHO-BRAVO'
 const SERVER_URL = 'http://localhost:5001'
@@ -49,10 +49,39 @@ export function vote (type, id, value) {
 }
 
 export function saveNewItem (item) {
-  let url = SERVER_URL + '/posts'
+  let url
+  if (item.parentId) {
+    url = SERVER_URL + '/comments'
+  } else {
+    url = SERVER_URL + '/posts'
+  }
   const method = 'post'
+  const body = JSON.stringify(item)
+  return readableFetch(url, {headers: headersJson, body, method})
+}
 
-  return readableFetch(url, {headers: headersJson, body: JSON.stringify(item), method})
+export function saveEdit (item, id) {
+  let url = SERVER_URL
+  if (item.title) {
+    url += `/posts/${id}`
+  } else {
+    url += `/comments/${id}`
+  }
+  const method = 'put'
+  const body = JSON.stringify(item)
+  return readableFetch(url, {headers: headersJson, body, method })
+}
+
+export function saveDeleteItem (id, itemType) {
+  let url = SERVER_URL
+  if (itemType === itemTypes.post) {
+    url += `/posts/${id}`
+  } else {
+    url += `/comments/${id}`
+  }
+
+  const method = 'delete'
+  return readableFetch(url, {headers, method})
 }
 
 function readableFetch (url, params) {
